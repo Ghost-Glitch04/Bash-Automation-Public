@@ -62,17 +62,40 @@
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
 
 # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+# -- Print Status in Color --
+# &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+# Function to show colored output and progress
+print_status() {
+    local color_green="\033[0;32m"
+    local color_yellow="\033[0;33m"
+    local color_reset="\033[0m"
+    
+    case "$1" in
+        "info") echo -e "${color_green}[INFO]${color_reset} $2" ;;
+        "warn") echo -e "${color_yellow}[WARN]${color_reset} $2" ;;
+        *) echo "$2" ;;
+    esac
+}
+
+# &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 # -- Check Root --
 # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
 # Function to check if the script is run as root
 check_root() {
-    if [ "$EUID" -ne 0 ]; then
-        echo "Please run this script as root (sudo)." >&2
 
-        
+    # EUID stands for "Effective User ID".
+    # EUID 0 is always the Root user.
+    if [ "$EUID" -ne 0 ]; then
+
+        # Announce that the scipt must run as root.
+        print_status "warn" "Please run this script as root (sudo)." >&2
+
+        # Exit the script with error code 1.        
         exit 1
-    fi
+
+    fi # End of If statement.
 
 } # End of function "check_root".
 
@@ -82,7 +105,9 @@ check_root() {
 
 # Function to configure automatic service restarts
 auto_restart_services() {
-    echo "Configuring system to automatically restart services during upgrades..."
+
+    # Announce the system wil be configured with automatic service restarts.
+    print_status "info" "Configuring system to automatically restart services during upgrades..."
 
     # Install debconf-utils if not already installed
     sudo apt-get install -y debconf-utils
@@ -98,8 +123,16 @@ auto_restart_services() {
 
 # Function to update and upgrade the system
 update_and_upgrade() {
-    echo "Updating and upgrading the system..."
+
+    # Announce that the sysem will Update and Upgrade.
+    print_status "info" "Updating and upgrading the system..."
+
+    # Update and Upgrade
+    # "upgrade" will perform on existing packages.
     sudo apt-get update && sudo apt-get upgrade -y
+
+    # Full Upgrade
+    # Full Upgrade will install new packages and resolve dependancies.
     sudo apt-get full-upgrade -y
 
 } # End of function "update_and_upgrade".
@@ -110,7 +143,11 @@ update_and_upgrade() {
 
 # Function to perform dist-upgrade
 perform_dist_upgrade() {
+
+    # Announce a distribution upgrade.
     print_status "info" "Performing distribution upgrade (more aggressive)..."
+
+    # Upgrade to the lastest Distro.
     sudo apt-get dist-upgrade -y
 
 } # End of function "perform_dist_upgrade".
@@ -121,7 +158,12 @@ perform_dist_upgrade() {
 
 # Function to fix any broken dependencies.
 fix_dependencies() {
-    echo "Checking and fixing any missing dependencies..."
+
+    # Announce the system will check and fix any missing dependencies.
+    print_status "info" "Checking and fixing any missing dependencies..."
+
+    # Start the package management utility and fix broken dependencies.
+    # -f is short for "--fix-broken"
     sudo apt-get install -f -y
 
 } # End of function "fix_dependencies".
@@ -132,8 +174,20 @@ fix_dependencies() {
 
 # Function to fix broken packages.
 fix_packages() {
-    echo "Checking and fixing any broken packages..."
+
+    # Announce the system will check and fix any broken packages.
+    print_status "info" "Checking and fixing any broken packages..."
+
+    # Scans for packages that were interrupted during installation
+    # Attempts to complete the configuration process for these packages
+    # Does NOT install new packages or download missing dependencies
+    # --configure is used to configure unpacked but unconfigured packages
+    # -a is short for "--all"
     sudo dpkg --configure -a
+
+    # Resolves dependency problems by installing missing dependencies
+    # May remove problematic packages if necessary
+    # Fixes the package database to ensure consistency
     sudo apt update && sudo apt --fix-broken install && sudo apt upgrade -y
 
 } # End of function "fix_packages".
@@ -144,7 +198,9 @@ fix_packages() {
 
 # Function to clean up the system.
 cleanup_packages() {
-    echo "Cleaning up unnecessary packages..."
+
+    # Announce the clenaing up unnecessary packages.
+    print_status "info" "Cleaning up unnecessary packages..."
 
     # Remove packages that were automatically installed but are no longer required.
     sudo apt-get autoremove -y
@@ -154,15 +210,33 @@ cleanup_packages() {
 
     # Find and report orphaned packages (but don't remove them automatically).
     print_status "info" "Checking for orphaned packages..."
+
+    # List all packages that are no longer required and have been marked for removal.
+    # The command "dpkg -l" lists all the installed packages recorded in the dpkg database.
+    # The command "grep '^rc'" filters the list to show only packages that are marked as "rc" (removed but configuration files remain).
+    # The command "awk '{print $2}'" extracts the second column of the output, which contains the package names.
+    # The result is stored in the variable "orphaned".
     orphaned=$(dpkg -l | grep "^rc" | awk '{print $2}')
     
+    # Detection of orphaned packages.
     if [ -n "$orphaned" ]; then
+
+        # Announce that orphaned packages have been found.
         print_status "warn" "Found orphaned packages configuration files:"
-        echo "$orphaned"
+
+        # Announce the list of orphaned packages.
+        print_status "warn" "$orphaned"
+
+        # Announce the next steps to remove orphaned packages.
         print_status "info" "To remove these configuration files, run: sudo dpkg --purge \$(dpkg -l | grep '^rc' | awk '{print \$2}')"
+
+    # When no orphaned packages are found.
     else
+
+        # Announce that no orphaned packages were found.
         print_status "info" "No orphaned package configurations found."
-    fi
+
+    fi # End of If/Else statement.
 
 } # End of function cleanup_packages.
 
@@ -172,7 +246,9 @@ cleanup_packages() {
 
 # Function to display a completion message.
 end_statement() {
-    echo "System has been updated and upgraded."
+
+    # Announce the script has completed.
+    print_status "info" "System has been updated and upgraded."
 
 } # End of function "end_statement".
 
