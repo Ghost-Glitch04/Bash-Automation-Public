@@ -178,15 +178,6 @@ show_ssh_keys() {
 # Function to regenerate SSH keys.
 regenerate_ssh_keys() {
 
-    # Ask for confirmation before proceeding
-    print_status "warn" "WARNING: This will regenerate all SSH keys and restart the SSH service."
-    print_status "warn" "Any existing SSH connections may be disrupted."
-    read -p "Do you want to continue? (y/N): " confirm
-    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        print_status "info" "Operation cancelled by user."
-        return 1
-    fi
-
     # Announce that the script is regenerating SSH keys for security.
     print_status "info" "Regenerating SSH keys for security..."
 
